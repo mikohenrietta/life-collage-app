@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="pale_pink">#D5BCBC</color>
+    <color name="soft_pink">#FFC7D8</color>
+    <color name="dark_pink">#FFA0B7</color>
+    <color name="dark_text">#6A6A6A</color>
+    <color name="light_gray_background">#F0F0F0</color>
+    <color name="light_pink_button">#FFE9EE</color>
+    <color name="pastel_blue">#D3E0F3</color>
+    <color name="pastel_lavender">#E8D3F3</color>
+</resources>
