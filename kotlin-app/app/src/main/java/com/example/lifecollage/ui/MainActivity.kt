@@ -8,11 +8,14 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.lifecollage.App
 import com.example.lifecollage.R
 import com.example.lifecollage.adapter.CollageAdapter
 import com.example.lifecollage.model.CollageItem
 import com.example.lifecollage.viewmodel.CollageViewModel
+import com.example.lifecollage.viewmodel.CollageViewModelFactory
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import org.mongodb.kbson.ObjectId
 
 class MainActivity : AppCompatActivity() {
 
@@ -30,27 +33,36 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
-        viewModel = ViewModelProvider(this).get(CollageViewModel::class.java)
+
+        val realm = (application as App).realm
+        val factory = CollageViewModelFactory(realm)
+        viewModel = ViewModelProvider(this, factory)[CollageViewModel::class.java]
 
         recyclerView = findViewById(R.id.recyclerView)
         addButton = findViewById(R.id.addButton)
 
-
-        adapter = CollageAdapter(
-            viewModel.items.value ?: mutableListOf(),
-        )
-
-        val gridLayoutManager = GridLayoutManager(this, 2)
-        recyclerView.layoutManager = gridLayoutManager
+        adapter = CollageAdapter(mutableListOf())
+        recyclerView.layoutManager = GridLayoutManager(this, 2)
         recyclerView.adapter = adapter
 
-        viewModel.items.observe(this) { updatedList ->
-            adapter.updateList(updatedList)
+        // Observe LiveData
+        viewModel.items.observe(this) { list ->
+            // Only add new items if the adapter is empty at start
+            if (adapter.itemCount == 0) {
+                adapter.setItems(list)
+            } else {
+                // Find changes and update positions manually
+                list.forEachIndexed { index, item ->
+                    if (index < adapter.itemCount && adapter.currentItems[index].id == item.id) {
+                        adapter.updateItemAt(index, item)
+                    }
+                }
+            }
         }
 
         adapter.setOnItemClickListener { item ->
             val intent = Intent(this, DetailActivity::class.java).apply {
-                putExtra("id", item.id)
+                putExtra("id", item.id.toHexString())
                 putExtra("title", item.title)
                 putExtra("description", item.description)
                 putExtra("date", item.date)
@@ -69,38 +81,51 @@ class MainActivity : AppCompatActivity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
 
-        if (resultCode == Activity.RESULT_OK && data != null) {
-            when (requestCode) {
-                ADD_ITEM_REQUEST_CODE -> {
-                    val title = data.getStringExtra("new_item_title") ?: ""
-                    val description = data.getStringExtra("new_item_description") ?: ""
-                    val date = data.getStringExtra("new_item_date") ?: ""
-                    val rating = data.getStringExtra("new_item_rating") ?: ""
-                    val imageUri = data.getStringExtra("new_item_imageUri")
+        if (resultCode != Activity.RESULT_OK || data == null) return
 
-                    viewModel.addItem(title, description, rating, date, imageUri)
+        when (requestCode) {
+            ADD_ITEM_REQUEST_CODE -> {
+                val title = data.getStringExtra("new_item_title") ?: ""
+                val description = data.getStringExtra("new_item_description") ?: ""
+                val date = data.getStringExtra("new_item_date") ?: ""
+                val rating = data.getStringExtra("new_item_rating") ?: ""
+                val imageUri = data.getStringExtra("new_item_imageUri")
+
+                viewModel.addItem(title, description, rating, date, imageUri)
+                
+            }
+
+            DETAIL_REQUEST_CODE -> {
+                val deleteIdString = data.getStringExtra("delete_item_id")
+                if (deleteIdString != null) {
+                    val deleteId = ObjectId(deleteIdString)
+                    viewModel.deleteItem(deleteId)
+
+                    // Remove from adapter directly
+                    val index = adapter.currentItems.indexOfFirst { it.id == deleteId }
+                    if (index != -1) adapter.removeItemAt(index)
+                    return
                 }
 
-                DETAIL_REQUEST_CODE -> {
-                    val deleteId = data.getIntExtra("delete_id", -1)
-                    if (deleteId != -1) {
-                        viewModel.deleteItem(deleteId)
+                val updateIdString = data.getStringExtra("updated_item_id")
+                if (updateIdString != null) {
+                    val updateId = ObjectId(updateIdString)
+
+                    viewModel.updateItem(updateId) { item ->
+                        item.title = data.getStringExtra("updated_item_title") ?: ""
+                        item.description = data.getStringExtra("updated_item_description") ?: ""
+                        item.date = data.getStringExtra("updated_item_date") ?: ""
+                        item.rating = data.getStringExtra("updated_item_rating") ?: ""
+                        item.imageUri = data.getStringExtra("updated_item_imageUri")
                     }
 
-                    val updatedId = data.getIntExtra("updated_item_id", -1)
-                    if (updatedId != -1) {
-                        val updatedItem = CollageItem(
-                            id = updatedId,
-                            title = data.getStringExtra("updated_item_title") ?: "",
-                            description = data.getStringExtra("updated_item_description") ?: "",
-                            date = data.getStringExtra("updated_item_date") ?: "",
-                            rating = data.getStringExtra("updated_item_rating") ?: "",
-                            imageUri = data.getStringExtra("updated_item_imageUri")
-                        )
-
-                        viewModel.updateItem(updatedItem)
+                    // Update adapter directly
+                    val index = adapter.currentItems.indexOfFirst { it.id == updateId }
+                    if (index != -1) {
+                        val updatedItem = viewModel.items.value?.get(index)
+                        if (updatedItem != null) adapter.updateItemAt(index, updatedItem)
                     }
-            }
+                }
             }
         }
     }

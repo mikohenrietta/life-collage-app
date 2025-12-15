@@ -1,10 +1,15 @@
 package com.example.lifecollage.model
 
-data class CollageItem (
-    val id: Int,
-    var title: String,
-    var description: String,
-    var rating: String,
-    var date: String,
-    val imageUri: String? = null
-)
+import io.realm.kotlin.types.RealmObject
+import io.realm.kotlin.types.annotations.PrimaryKey
+import org.mongodb.kbson.ObjectId
+
+class CollageItem : RealmObject {
+    @PrimaryKey
+    var id: ObjectId = ObjectId()
+    var title: String = ""
+    var description: String = ""
+    var rating: String = ""
+    var date: String = ""
+    var imageUri: String? = null
+}

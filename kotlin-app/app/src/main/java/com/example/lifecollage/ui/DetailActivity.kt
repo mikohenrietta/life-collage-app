@@ -36,7 +36,7 @@ class DetailActivity : AppCompatActivity() {
         deleteButton = findViewById(R.id.deleteButton)
         itemImage = findViewById(R.id.itemImage)
 
-        val id = intent.getIntExtra("id", -1)
+        val id = intent.getStringExtra("id")
         val title = intent.getStringExtra("title")
         val description = intent.getStringExtra("description")
         val date = intent.getStringExtra("date")
@@ -74,7 +74,7 @@ class DetailActivity : AppCompatActivity() {
                 .setMessage("Are you sure you want to delete \"$title\"?")
                 .setPositiveButton("Yes") { _, _ ->
                     val intent = Intent().apply {
-                        putExtra("delete_id", id)
+                        putExtra("delete_item_id", id)
                     }
                     setResult(RESULT_OK, intent)
                     finish()
@@ -87,7 +87,7 @@ class DetailActivity : AppCompatActivity() {
         super.onActivityResult(requestCode, resultCode, data)
 
         if (requestCode == 3 && resultCode == Activity.RESULT_OK && data != null) {
-            val updatedItemId = data.getIntExtra("updated_item_id", -1)
+            val updatedItemId = data.getStringExtra("updated_item_id")
             val updatedTitle = data.getStringExtra("updated_item_title") ?: ""
             val updatedDescription = data.getStringExtra("updated_item_description") ?: ""
             val updatedDate = data.getStringExtra("updated_item_date") ?: ""

@@ -49,7 +49,7 @@ class UpdateCollageItemActivity : AppCompatActivity(){
         selectedImageView = findViewById(R.id.selectedImage)
         selectedImageButton = findViewById(R.id.selectedImageButton)
 
-        val id = intent.getIntExtra("id", -1)
+        val id = intent.getStringExtra("id")
         val title = intent.getStringExtra("title")
         val description = intent.getStringExtra("description")
         val date = intent.getStringExtra("date")
