@@ -3,6 +3,7 @@ package com.example.lifecollage.ui
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
@@ -41,25 +42,19 @@ class MainActivity : AppCompatActivity() {
         recyclerView = findViewById(R.id.recyclerView)
         addButton = findViewById(R.id.addButton)
 
-        adapter = CollageAdapter(mutableListOf())
+        adapter = CollageAdapter()
         recyclerView.layoutManager = GridLayoutManager(this, 2)
         recyclerView.adapter = adapter
 
-        // Observe LiveData
         viewModel.items.observe(this) { list ->
-            // Only add new items if the adapter is empty at start
-            if (adapter.itemCount == 0) {
-                adapter.setItems(list)
-            } else {
-                // Find changes and update positions manually
-                list.forEachIndexed { index, item ->
-                    if (index < adapter.itemCount && adapter.currentItems[index].id == item.id) {
-                        adapter.updateItemAt(index, item)
-                    }
-                }
+            adapter.submitList(list.toList())
+        }
+        viewModel.statusMessage.observe(this) { message ->
+            if (message.isNotEmpty()) {
+                Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+                android.util.Log.d("CollageApp", message)
             }
         }
-
         adapter.setOnItemClickListener { item ->
             val intent = Intent(this, DetailActivity::class.java).apply {
                 putExtra("id", item.id.toHexString())
@@ -100,10 +95,6 @@ class MainActivity : AppCompatActivity() {
                 if (deleteIdString != null) {
                     val deleteId = ObjectId(deleteIdString)
                     viewModel.deleteItem(deleteId)
-
-                    // Remove from adapter directly
-                    val index = adapter.currentItems.indexOfFirst { it.id == deleteId }
-                    if (index != -1) adapter.removeItemAt(index)
                     return
                 }
 
@@ -117,13 +108,6 @@ class MainActivity : AppCompatActivity() {
                         item.date = data.getStringExtra("updated_item_date") ?: ""
                         item.rating = data.getStringExtra("updated_item_rating") ?: ""
                         item.imageUri = data.getStringExtra("updated_item_imageUri")
-                    }
-
-                    // Update adapter directly
-                    val index = adapter.currentItems.indexOfFirst { it.id == updateId }
-                    if (index != -1) {
-                        val updatedItem = viewModel.items.value?.get(index)
-                        if (updatedItem != null) adapter.updateItemAt(index, updatedItem)
                     }
                 }
             }

@@ -6,16 +6,16 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.core.net.toUri
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.example.lifecollage.R
 import com.example.lifecollage.model.CollageItem
 
 class CollageAdapter(
-    private var items: MutableList<CollageItem>,
     private var onItemClickListener: ((CollageItem) -> Unit)? = null
-) : RecyclerView.Adapter<CollageAdapter.CollageViewHolder>() {
-    val currentItems: List<CollageItem>
-        get() = items
+) : ListAdapter<CollageItem, CollageAdapter.CollageViewHolder>(CollageDiffCallback()) {
+
     class CollageViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val title: TextView = view.findViewById(R.id.titleText)
         val description: TextView = view.findViewById(R.id.descriptionText)
@@ -31,9 +31,8 @@ class CollageAdapter(
     }
 
     override fun onBindViewHolder(holder: CollageViewHolder, position: Int) {
-        val item = items[position]
+        val item = getItem(position)
 
-        // Image
         val uri = item.imageUri
         if (uri != null) {
             holder.imageView.visibility = View.VISIBLE
@@ -53,32 +52,21 @@ class CollageAdapter(
         }
     }
 
-    override fun getItemCount(): Int = items.size
-
     fun setOnItemClickListener(listener: (CollageItem) -> Unit) {
         onItemClickListener = listener
     }
+}
 
-    fun setItems(newList: List<CollageItem>) {
-        items.clear()
-        items.addAll(newList)
-        notifyDataSetChanged() // call once at start
+class CollageDiffCallback : DiffUtil.ItemCallback<CollageItem>() {
+    override fun areItemsTheSame(oldItem: CollageItem, newItem: CollageItem): Boolean {
+        return oldItem.id == newItem.id
     }
 
-    fun addItem(item: CollageItem) {
-        items.add(item)
-        notifyItemInserted(items.size - 1)
-    }
-
-    fun updateItemAt(position: Int, item: CollageItem) {
-        if (position < 0 || position >= items.size) return
-        items[position] = item
-        notifyItemChanged(position)
-    }
-
-    fun removeItemAt(position: Int) {
-        if (position < 0 || position >= items.size) return
-        items.removeAt(position)
-        notifyItemRemoved(position)
+    override fun areContentsTheSame(oldItem: CollageItem, newItem: CollageItem): Boolean {
+        return oldItem.title == newItem.title &&
+                oldItem.description == newItem.description &&
+                oldItem.rating == newItem.rating &&
+                oldItem.date == newItem.date &&
+                oldItem.imageUri == newItem.imageUri
     }
 }
