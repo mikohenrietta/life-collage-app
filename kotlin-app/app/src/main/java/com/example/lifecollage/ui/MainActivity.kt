@@ -1,5 +1,5 @@
 package com.example.lifecollage.ui
-
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
@@ -24,7 +24,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var adapter: CollageAdapter
     private lateinit var addButton: FloatingActionButton
     private lateinit var viewModel: CollageViewModel
-
+    private lateinit var swipeRefreshLayout: SwipeRefreshLayout
     companion object {
         private const val ADD_ITEM_REQUEST_CODE = 1
         private const val DETAIL_REQUEST_CODE = 2
@@ -36,7 +36,9 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         val realm = (application as App).realm
-        val factory = CollageViewModelFactory(realm)
+        val networkMonitor = (application as App).networkMonitor
+        val factory = CollageViewModelFactory(realm, networkMonitor)
+        val offlineHeader = findViewById<android.widget.TextView>(R.id.offlineHeader)
         viewModel = ViewModelProvider(this, factory)[CollageViewModel::class.java]
 
         recyclerView = findViewById(R.id.recyclerView)
@@ -46,8 +48,15 @@ class MainActivity : AppCompatActivity() {
         recyclerView.layoutManager = GridLayoutManager(this, 2)
         recyclerView.adapter = adapter
 
+        swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout)
+
+        swipeRefreshLayout.setOnRefreshListener {
+            viewModel.refreshData()
+        }
+
         viewModel.items.observe(this) { list ->
             adapter.submitList(list.toList())
+            swipeRefreshLayout.isRefreshing = false
         }
         viewModel.statusMessage.observe(this) { message ->
             if (message.isNotEmpty()) {
@@ -55,9 +64,16 @@ class MainActivity : AppCompatActivity() {
                 android.util.Log.d("CollageApp", message)
             }
         }
+        viewModel.isOnline.observe(this) { isOnline ->
+            if (isOnline) {
+                offlineHeader.visibility = android.view.View.GONE
+            } else {
+                offlineHeader.visibility = android.view.View.VISIBLE
+            }
+        }
         adapter.setOnItemClickListener { item ->
             val intent = Intent(this, DetailActivity::class.java).apply {
-                putExtra("id", item.id.toHexString())
+                putExtra("id", item._id.toHexString())
                 putExtra("title", item.title)
                 putExtra("description", item.description)
                 putExtra("date", item.date)

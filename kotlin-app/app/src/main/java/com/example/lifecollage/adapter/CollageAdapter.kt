@@ -59,7 +59,8 @@ class CollageAdapter(
 
 class CollageDiffCallback : DiffUtil.ItemCallback<CollageItem>() {
     override fun areItemsTheSame(oldItem: CollageItem, newItem: CollageItem): Boolean {
-        return oldItem.id == newItem.id
+
+        return oldItem._id == newItem._id
     }
 
     override fun areContentsTheSame(oldItem: CollageItem, newItem: CollageItem): Boolean {
