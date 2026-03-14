@@ -32,7 +32,3 @@ Offline scenarios:
 - Update: changes made while offline are applied locally and queued for synchronization once online.
 - Delete: deleted items are flagged locally and removed from the server upon reconnection.
 
-## Mockup
-<img width="341" height="408" alt="image" src="https://github.com/user-attachments/assets/ca7c4867-062f-4cb4-b69e-93951321f837" />
-<img width="325" height="404" alt="image" src="https://github.com/user-attachments/assets/ca2c8214-345b-4fd4-8c7c-28a21ac2b814" />
-
